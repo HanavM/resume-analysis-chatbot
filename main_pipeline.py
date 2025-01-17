@@ -4,7 +4,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFaceEmbeddings
 from uuid import uuid4
 import json
-from transformers import pipeline
+from transformers import pipeline, logging
+import transformers
 import torch
 import ast
 from langchain_core.documents import Document
@@ -13,7 +14,7 @@ import shutil
 import numpy as np
 from huggingface_hub import login
 from message_bases import message_base_for_prompt,  generation_base_0, generation_base_1 #base prompts extracted from message_bases.py
-
+transformers.logging.set_verbosity_error()
 # insert hugging face access token here.
 # Make sure to get access to meta-llama/Llama-3.2-3B-Instruct on HuggingFace at https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct
 login(token="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")
@@ -23,7 +24,10 @@ all_resumes = []
 idx = 0
 
 #insert path of dataset outputted from preprocess.py
-dataset_path = "/content/drive/MyDrive/Resume Chatbot Research Project/PDF_RESUME"
+dataset_path = "/content/drive/MyDrive/Resume Chatbot Research Project/Resume Dataset Full"
+
+#insert path of output folder from create_output_folder.py
+output_folder = "/content/outputfolder"
 
 def add_vector(field, text, index, split_threshold):
   text_split = text.split(" ")
@@ -81,13 +85,13 @@ vector_store = FAISS(
     index_to_docstore_id={},
 )
 
-
+logging.set_verbosity_error()
 model_id = "meta-llama/Llama-3.2-3B-Instruct"
 pipe = pipeline(
     "text-generation",
     model=model_id,
     model_kwargs={"torch_dtype": torch.bfloat16},
-    device="cpu",
+    device="cuda",
 )
 terminators = [
     pipe.tokenizer.eos_token_id,
@@ -123,6 +127,8 @@ query_threshold_per_field = {
 }
 
 
+print("Creating Vector Store")
+
 for resume_folder in os.listdir(dataset_path)[:100]:
   resume_folder_path = os.path.join(dataset_path, resume_folder)
   for file in os.listdir(resume_folder_path):
@@ -151,15 +157,18 @@ for field in documents_per_field:
   vector_stores_per_field[field] = vector_store
 
 prompt_build_up = ""
+print("Finished Creating Vector Store")
+iteration_idx = 0
 
 while (True):
+  iteration_idx += 1
   prompt = input("User > ")
   if (prompt == "exit"):
     break
   prompt_build_up += prompt
 
   # === Structure Prompt ===
-  complete_prompt = message_base + [{"role": "system", "content": prompt_build_up}]
+  complete_prompt = message_base_for_prompt + [{"role": "system", "content": prompt_build_up}]
   terminators = [
       pipe.tokenizer.eos_token_id,
       pipe.tokenizer.convert_tokens_to_ids("<|eot_id|>")
@@ -179,7 +188,6 @@ while (True):
       )
       response = outputs[0]["generated_text"][-1]["content"]
       prompt_dict = ast.literal_eval(response)
-
 
 
   # === Filter Resumes ===
@@ -237,6 +245,21 @@ while (True):
     all_resumes_text += str(all_resumes[ranked_documents[i][0]])
     all_resumes_text += "\n"
 
+
+  full_resumes_text = "prompt: " + prompt +"\n\n"
+  for i in range(len(ranked_documents)):
+    full_resumes_text += ("Candidate " + str(i)+":\n")
+    full_resumes_text += str(all_resumes[ranked_documents[i][0]])
+    full_resumes_text += "\n\n"
+
+
+  #create a txt file with the contents being full_resumes_text and save it into /content/outputfolder
+  file_path = os.path.join(output_folder, f"full_resumes{iteration_idx}.txt")
+
+  # Write the contents to the file
+  with open(file_path, "w") as file:
+      file.write(full_resumes_text)
+
   # === Response from model ===
   complete_prompt_generator = generation_base_0 + [{"role": "generator in a RAG pipeline", "content": "this was the prompt given: '" + prompt + "'"}]
   complete_prompt_generator = complete_prompt_generator + generation_base_1
@@ -247,15 +270,16 @@ while (True):
       pipe.tokenizer.convert_tokens_to_ids("<|eot_id|>")
   ]
 
-
+  print("Bot >", end=" ")
   with torch.no_grad():
       outputs = pipe(
           complete_prompt_generator,
-          max_new_tokens=3000,
+          max_new_tokens=500,
           eos_token_id=terminators,
           do_sample=True,
           temperature=0.9,
           top_p=0.9,
       )
       response = outputs[0]["generated_text"][-1]["content"]
-      print("Bot >",response)
+      print(response)
+      print(f"All the resumes have been saved to: full_resumes{iteration_idx}.txt")
