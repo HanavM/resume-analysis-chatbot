@@ -8,9 +8,9 @@ Order to run programs:
 
 preprocess.py
 
-To run preprocess.py, run: "python3 preprocess.py /path/to/resume/folder"
-Once preprocess.py terminates, a path will outputted that specifies where the processed resume dataset is.
-Save that path (processed resume dataset path). 
+	To run preprocess.py, run: "python3 preprocess.py /path/to/resume/folder"
+	Once preprocess.py terminates, a path will outputted that specifies where the processed resume dataset is.
+	Save that path (processed resume dataset path). 
 
 extract_metadata.py
 
