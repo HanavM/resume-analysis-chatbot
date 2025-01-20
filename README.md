@@ -10,6 +10,7 @@ preprocess.py
 
 To run preprocess.py, run: 
 	python3 preprocess.py /path/to/resume/folder
+ 
 preprocess.py will return:
 	All resumes have been preprocessed and saved at: /path/to/preprocessed/resume/folder"
 Save that path: /path/to/preprocessed/resume/folder (processed resume dataset path). 
