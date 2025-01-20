@@ -1,12 +1,13 @@
 import os
 import argparse
 
-parser = argparse.ArgumentParser(description="Process a folder of PDFs and extract text.")
-parser.add_argument("directory", type=str, help="Path to the folder containing preprocessed PDF resumes")
+parser = argparse.ArgumentParser(description="Process extracted resume text and generate metadata.")
+parser.add_argument("dataset_path", type=str, help="Path to the folder containing processed resume text")
 args = parser.parse_args()
 
-directory_path = args.directory
+dataset_path = args.dataset_path
 
+directory_path = 
 output_folder_path = "/".join(directory_path.split("/")[:-1]) + "/outputfolder"
 
 # print(output_folder_path)

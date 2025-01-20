@@ -12,7 +12,7 @@ def extract_text_from_pdf(pdf_path):
             text += page.extract_text() + "\n"
     return text
 
-
+#insert dataset of resume path here
 parser = argparse.ArgumentParser(description="Process a folder of PDFs and extract text.")
 parser.add_argument("resume_folder", type=str, help="Path to the folder containing PDF resumes")
 args = parser.parse_args()

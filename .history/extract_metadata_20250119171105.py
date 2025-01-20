@@ -74,4 +74,3 @@ for folder in os.listdir(dataset_path):
 
 
 print("Finished converting:", count, " resumes")
-print("Extracted Metadata at path:", dataset_path)
